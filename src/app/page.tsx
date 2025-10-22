@@ -1,13 +1,14 @@
-"use client"
+'use client'
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Camera, Video, Settings, Activity, Zap, Monitor, Play, Square, RotateCcw } from 'lucide-react'
+import { Camera, Video, Settings, Activity, Zap, Monitor, Play, Square, RotateCcw, Move3D } from 'lucide-react'
+
 import { CameraControlPanel } from '@/components/camera-control-panel'
 import { GimbalControl } from '@/components/gimbal-control'
 import { VideoPreview } from '@/components/video-preview'
@@ -16,118 +17,221 @@ import { LightingControl } from '@/components/lighting-control'
 import { SystemStatus } from '@/components/system-status'
 import { ToFMonitoring } from '@/components/tof-monitoring'
 import { CalibrationWorkflow } from '@/components/calibration-workflow'
+import { TurntableControl } from '@/components/turntable-control'
 
-export default function Vantage4DDashboard() {
+export default function Home() {
   const [systemStatus, setSystemStatus] = useState({
     r5c: { connected: false, recording: false, mode: 'standby' },
     r5m2: { connected: false, capturing: false, focusStack: 0 },
     gimbal: { connected: false, mode: 'idle', battery: 100 },
+    turntable: { connected: false, moving: false, angle: 0 },
     capture: { active: false, progress: 0, frames: 0 },
     reconstruction: { status: 'idle', progress: 0 }
   })
 
-  const [alerts, setAlerts] = useState([
-    { type: 'warning', message: 'Canon R5C not connected' },
-    { type: 'info', message: 'System ready for calibration' }
-  ])
+  const [activeTab, setActiveTab] = useState('cameras')
 
   useEffect(() => {
-    // Simulate system status updates
+    // Simulate system updates
     const interval = setInterval(() => {
       setSystemStatus(prev => ({
         ...prev,
-        r5c: { ...prev.r5c, connected: Math.random() > 0.3 },
-        r5m2: { ...prev.r5m2, connected: Math.random() > 0.2 },
-        gimbal: { ...prev.gimbal, connected: Math.random() > 0.1, battery: Math.max(20, prev.gimbal.battery - Math.random() * 2) }
+        gimbal: {
+          ...prev.gimbal,
+          battery: Math.max(0, prev.gimbal.battery - 0.1)
+        }
       }))
-    }, 3000)
+    }, 1000)
 
     return () => clearInterval(interval)
   }, [])
 
-  const handleStartCapture = async () => {
-    setSystemStatus(prev => ({
-      ...prev,
-      capture: { active: true, progress: 0, frames: 0 }
-    }))
-
-    // Simulate capture progress
-    const progressInterval = setInterval(() => {
-      setSystemStatus(prev => {
-        const newProgress = Math.min(100, prev.capture.progress + Math.random() * 10)
-        if (newProgress >= 100) {
-          clearInterval(progressInterval)
-          return { ...prev, capture: { active: false, progress: 100, frames: Math.floor(Math.random() * 500) + 200 } }
-        }
-        return { ...prev, capture: { ...prev.capture, progress: newProgress, frames: Math.floor(newProgress * 5) } }
-      })
-    }, 500)
-  }
-
-  const handleStopCapture = () => {
-    setSystemStatus(prev => ({
-      ...prev,
-      capture: { active: false, progress: prev.capture.progress }
-    }))
+  const handleQuickAction = (action: string) => {
+    switch(action) {
+      case 'start_capture':
+        setSystemStatus(prev => ({
+          ...prev,
+          capture: { ...prev.capture, active: true }
+        }))
+        break
+      case 'stop_capture':
+        setSystemStatus(prev => ({
+          ...prev,
+          capture: { ...prev.capture, active: false, progress: 0 }
+        }))
+        break
+      case 'emergency_stop':
+        setSystemStatus(prev => ({
+          ...prev,
+          r5c: { ...prev.r5c, recording: false },
+          r5m2: { ...prev.r5m2, capturing: false },
+          capture: { active: false, progress: 0, frames: 0 }
+        }))
+        break
+    }
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="relative w-16 h-16">
-              <img
-                src="https://z-cdn-media.chatglm.cn/files/d793a483-7f14-4656-a624-63af0cc3cd65_IMG_8782.jpeg?auth_key=1792661651-db992d55b33341ea8d166da1bfafa7c1-0-5a40983d8e8f0921e8815f3bdd665d85"
-                alt="Vantage Logo"
-                className="w-full h-full object-contain"
-              />
-            </div>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold">Vantage4D Control System</h1>
-              <p className="text-muted-foreground">Integrated 8K Video & Macro Photography 3D Reconstruction</p>
+              <h1 className="text-3xl font-bold tracking-tight">Vantage4D Control System</h1>
+              <p className="text-muted-foreground">Professional 4D Capture & Control Platform</p>
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <Badge variant={systemStatus.capture.active ? "destructive" : "secondary"} className="px-3 py-1">
-              {systemStatus.capture.active ? "RECORDING" : "READY"}
-            </Badge>
-            <Button
-              onClick={systemStatus.capture.active ? handleStopCapture : handleStartCapture}
-              variant={systemStatus.capture.active ? "destructive" : "default"}
-              size="lg"
-              className="flex items-center gap-2"
-            >
-              {systemStatus.capture.active ? (
-                <>
-                  <Square className="w-4 h-4" />
-                  Stop Capture
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4" />
-                  Start Capture
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-4">
+              <Badge variant={systemStatus.capture.active ? "default" : "secondary"} className="text-sm px-3 py-1">
+                {systemStatus.capture.active ? "CAPTURING" : "STANDBY"}
+              </Badge>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setActiveTab('system')}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                System Settings
+              </Button>
+            </div>
           </div>
         </div>
+      </header>
 
-        {/* System Status Bar */}
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">R5C Status</p>
+                  <p className="text-2xl font-bold">{systemStatus.r5c.mode}</p>
+                </div>
+                <Camera className="w-8 h-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">R5 Mark II</p>
+                  <p className="text-2xl font-bold">{systemStatus.r5m2.focusStack} stack</p>
+                </div>
+                <Camera className="w-8 h-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Gimbal</p>
+                  <p className="text-2xl font-bold">{Math.round(systemStatus.gimbal.battery)}%</p>
+                </div>
+                <RotateCcw className="w-8 h-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Turntable</p>
+                  <p className="text-2xl font-bold">{systemStatus.turntable?.angle || 0}°</p>
+                </div>
+                <Move3D className="w-8 h-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Frames</p>
+                  <p className="text-2xl font-bold">{systemStatus.capture.frames}</p>
+                </div>
+                <Activity className="w-8 h-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* System Alerts */}
+        {systemStatus.gimbal.battery < 20 && (
+          <Alert>
+            <Zap className="h-4 w-4" />
+            <AlertDescription>
+              Gimbal battery low ({Math.round(systemStatus.gimbal.battery)}%). Consider charging soon.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Quick Actions */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
-              System Status
-            </CardTitle>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Common capture workflow controls</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                onClick={() => handleQuickAction('start_capture')}
+                disabled={systemStatus.capture.active}
+                className="flex items-center gap-2"
+              >
+                <Play className="w-4 h-4" />
+                Start Capture Sequence
+              </Button>
+              <Button 
+                onClick={() => handleQuickAction('stop_capture')}
+                disabled={!systemStatus.capture.active}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Square className="w-4 h-4" />
+                Stop Capture
+              </Button>
+              <Button 
+                onClick={() => handleQuickAction('emergency_stop')}
+                variant="destructive"
+                className="flex items-center gap-2"
+              >
+                <Square className="w-4 h-4" />
+                Emergency Stop
+              </Button>
+            </div>
+            
+            {systemStatus.capture.active && (
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span>Capture Progress</span>
+                  <span>{Math.round(systemStatus.capture.progress)}%</span>
+                </div>
+                <Progress value={systemStatus.capture.progress} className="h-2" />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Device Status Overview */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Device Status</CardTitle>
+            <CardDescription>Real-time connection and status monitoring</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
-                  <Video className="w-4 h-4" />
-                  <span className="font-medium">R5C (8K)</span>
+                  <Camera className="w-4 h-4" />
+                  <span className="font-medium">R5C</span>
                 </div>
                 <Badge variant={systemStatus.r5c.connected ? "default" : "destructive"}>
                   {systemStatus.r5c.connected ? "Connected" : "Disconnected"}
@@ -136,7 +240,7 @@ export default function Vantage4DDashboard() {
               <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
                   <Camera className="w-4 h-4" />
-                  <span className="font-medium">R5 Mk II</span>
+                  <span className="font-medium">R5 Mark II</span>
                 </div>
                 <Badge variant={systemStatus.r5m2.connected ? "default" : "destructive"}>
                   {systemStatus.r5m2.connected ? "Connected" : "Disconnected"}
@@ -156,52 +260,30 @@ export default function Vantage4DDashboard() {
               </div>
               <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4" />
-                  <span className="font-medium">Capture</span>
+                  <Move3D className="w-4 h-4" />
+                  <span className="font-medium">Turntable</span>
                 </div>
-                <span className="text-sm font-medium">{systemStatus.capture.frames} frames</span>
+                <Badge variant={systemStatus.turntable?.connected ? "default" : "destructive"}>
+                  {systemStatus.turntable?.connected ? "Connected" : "Disconnected"}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Monitor className="w-4 h-4" />
+                  <span className="font-medium">System</span>
+                </div>
+                <Badge variant="default">Online</Badge>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Alerts */}
-        {alerts.length > 0 && (
-          <div className="space-y-2">
-            {alerts.map((alert, index) => (
-              <Alert key={index} variant={alert.type === 'warning' ? "destructive" : "default"}>
-                <AlertDescription>{alert.message}</AlertDescription>
-              </Alert>
-            ))}
-          </div>
-        )}
-
-        {/* Capture Progress */}
-        {systemStatus.capture.active && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Capture Progress</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Processing frames...</span>
-                  <span>{Math.round(systemStatus.capture.progress)}%</span>
-                </div>
-                <Progress value={systemStatus.capture.progress} className="h-2" />
-                <div className="text-sm text-muted-foreground">
-                  {systemStatus.capture.frames} frames captured
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Main Control Tabs */}
-        <Tabs defaultValue="cameras" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="cameras">Cameras</TabsTrigger>
             <TabsTrigger value="gimbal">Gimbal</TabsTrigger>
+            <TabsTrigger value="turntable">Turntable</TabsTrigger>
             <TabsTrigger value="video">Video Preview</TabsTrigger>
             <TabsTrigger value="reconstruction">3D Reconstruction</TabsTrigger>
             <TabsTrigger value="lighting">Lighting</TabsTrigger>
@@ -216,6 +298,10 @@ export default function Vantage4DDashboard() {
 
           <TabsContent value="gimbal">
             <GimbalControl systemStatus={systemStatus} setSystemStatus={setSystemStatus} />
+          </TabsContent>
+
+          <TabsContent value="turntable">
+            <TurntableControl systemStatus={systemStatus} setSystemStatus={setSystemStatus} />
           </TabsContent>
 
           <TabsContent value="video">
@@ -235,14 +321,24 @@ export default function Vantage4DDashboard() {
           </TabsContent>
 
           <TabsContent value="calibration">
-            <CalibrationWorkflow />
+            <CalibrationWorkflow systemStatus={systemStatus} setSystemStatus={setSystemStatus} />
           </TabsContent>
 
           <TabsContent value="system">
             <SystemStatus systemStatus={systemStatus} />
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t mt-12">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <p>Vantage4D Control System v1.0.0</p>
+            <p>Professional 4D Capture Platform</p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
