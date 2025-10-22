@@ -280,16 +280,16 @@ export default function Home() {
 
         {/* Main Control Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-9">
-            <TabsTrigger value="cameras">Cameras</TabsTrigger>
-            <TabsTrigger value="gimbal">Gimbal</TabsTrigger>
-            <TabsTrigger value="turntable">Turntable</TabsTrigger>
-            <TabsTrigger value="video">Video Preview</TabsTrigger>
-            <TabsTrigger value="reconstruction">3D Reconstruction</TabsTrigger>
-            <TabsTrigger value="lighting">Lighting</TabsTrigger>
-            <TabsTrigger value="tof">ToF Monitoring</TabsTrigger>
-            <TabsTrigger value="calibration">Calibration</TabsTrigger>
-            <TabsTrigger value="system">System</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-9 gap-1">
+            <TabsTrigger value="cameras" className="text-xs sm:text-sm">Cameras</TabsTrigger>
+            <TabsTrigger value="gimbal" className="text-xs sm:text-sm">Gimbal</TabsTrigger>
+            <TabsTrigger value="turntable" className="text-xs sm:text-sm">Turntable</TabsTrigger>
+            <TabsTrigger value="video" className="text-xs sm:text-sm">Video</TabsTrigger>
+            <TabsTrigger value="reconstruction" className="text-xs sm:text-sm hidden md:inline-flex">3D Recon</TabsTrigger>
+            <TabsTrigger value="lighting" className="text-xs sm:text-sm hidden lg:inline-flex">Lighting</TabsTrigger>
+            <TabsTrigger value="tof" className="text-xs sm:text-sm hidden lg:inline-flex">ToF</TabsTrigger>
+            <TabsTrigger value="calibration" className="text-xs sm:text-sm hidden md:inline-flex">Calib</TabsTrigger>
+            <TabsTrigger value="system" className="text-xs sm:text-sm">System</TabsTrigger>
           </TabsList>
 
           <TabsContent value="cameras">
